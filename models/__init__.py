@@ -1,0 +1,2 @@
+from models.single_param_model import single_param_regression
+from models.double_param_model import double_param_regression
