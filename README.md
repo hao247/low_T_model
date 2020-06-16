@@ -20,9 +20,9 @@ The brief introduction of underlying physics of these properties can be found on
 
 * The double parameter model y = y<sub>0</sub> + A<sub>1</sub>x<sup>p<sub>1</sub></sup> + A<sub>2</sub>x<sup>p<sub>2</sub></sup> uses (x<sup>p<sub>1</sub></sup>, x<sup>p<sub>2</sub></sup>, y) for fitting the model.
 
-By default, the mean squared error (MSE) is used to evaluate the performance of the model. The MSE as a function of power exponent provided in the app helps identify the best model. In the double-parameter model, this is a heatmap showing distribution of MSE for different combinations of p1 and p2.
+By default, the mean squared error (MSE) is used to evaluate the performance of the model. The figures of MSE as a function of power exponent provided in the app help to identify the best model. In the double-parameter model, this is a heatmap showing distribution of MSE for different combinations of p1 and p2.
 
-A model with more than one parameter usually displays varied power exponent for different selected ranges. It would be helpful to play with the data range before determining the value of exponents.
+A model with more than one parameter usually displays a varing power exponent for different selected ranges. It would be helpful to play with the data range before determining the value of exponents.
 
 
 ### How to use
