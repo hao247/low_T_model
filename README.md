@@ -1,4 +1,4 @@
-# low_T_model
+# Low-T model
 
 This is an app for finding the power law dependency of low temperature physical properties. This properties includes the electrical resistivity in metals and specific heat of all materials.
 
@@ -12,11 +12,11 @@ The brief introduction of underlying physics of these properties can be found in
 
 3. **[Debye model](https://en.wikipedia.org/wiki/Debye_model)**
 
-4. For electronic and magnetic contribution to specific heat, more detailed discussions are elaborated in solid state physics textbooks.
+4. For electronic and magnetic contributions to specific heat, more detailed discussions are elaborated in solid state physics textbooks.
 
 ### Model
 
-* The single parameter model y = y<sub>0</sub> + Ax<sup>p</sup> is implemented simply performing linear regression based on (x<sup>n</sup>, y) pairs. 
+* The single parameter model y = y<sub>0</sub> + Ax<sup>p</sup> is implemented by simply performing linear regression based on (x<sup>n</sup>, y) pairs. 
 
 * The double parameter model y = y<sub>0</sub> + A<sub>1</sub>x<sup>p<sub>1</sub></sup> + A<sub>2</sub>x<sup>p<sub>2</sub></sup> uses (x<sup>p<sub>1</sub></sup>, x<sup>p<sub>2</sub></sup>, y) for fitting the model.
 
