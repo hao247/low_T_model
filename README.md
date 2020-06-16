@@ -4,7 +4,7 @@ This is an app for finding the power law dependency of low temperature physical 
 
 ### Principle
 
-The simplified physics of these properties can be discussed in these pages:
+The brief introduction of underlying physics of these properties can be found in these pages:
 
 1. **[Electrical resistivity and conductivity from wiki](https://en.wikipedia.org/wiki/Electrical_resistivity_and_conductivity)**
 
@@ -12,7 +12,7 @@ The simplified physics of these properties can be discussed in these pages:
 
 3. **[Debye model](https://en.wikipedia.org/wiki/Debye_model)**
 
-4. For electronic and magnetic contribution to specific heat, more elaborative discussions are made in solid state physics textbooks.
+4. For electronic and magnetic contribution to specific heat, more detailed discussions are elaborated in solid state physics textbooks.
 
 ### Model
 
