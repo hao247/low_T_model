@@ -1,5 +1,6 @@
 import base64
 import io
+from threading import Timer
 
 import dash_core_components as dcc
 import dash_html_components as html
@@ -10,9 +11,9 @@ from dash import Dash
 from dash.dependencies import Input, Output, State
 
 import utils.gen_plot as plt
-from models import single_param_regression, double_param_regression
+from models import double_param_regression, single_param_regression
 from params import colors, metrics
-
+from utils.helpers import gen_df_from_json, open_browser
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = Dash(__name__, external_stylesheets=external_stylesheets)
@@ -36,7 +37,7 @@ app.layout = html.Div([
                     html.Br(),
                     html.Ol([
                         html.Li('Upload your data file and select x and y columns.'),
-                        html.Li('Check data on the right panel and specify a range for modeling.'),
+                        html.Li('Specify a range of data for modeling.'),
                         html.Li('Select the range of expoenent and the metric of model performance'),
                     ])
                 ],style={'font-size': '18px', 
@@ -343,22 +344,34 @@ app.layout = html.Div([
                Input('select_pow_range', 'value'),
                Input('select_test_size', 'value')])
 def perform_single_regression(df_json, X_col, y_col, metric, pow_range, test_size):
+    """ Generate outputs on the single parameter regression panel
+
+    Args:
+        df_json (json): json string stored on the web page
+        X_col (str): name of x-column
+        y_col (str): name of y-column
+        metric (str): type of metric for model evaluation
+        pow_range (list): minimum and maximum of power exponent
+        test_size (float): test_size ratio for model evaluation
+
+    Returns:
+        list: a list contains 
+        1. metric as a function of exponent
+        2. best model prediction
+        3. mathematical expression
+    """    
     if all([df_json, X_col, y_col, metric, pow_range]):
-        df = pd.read_json(str(df_json))
-        X = df[X_col].values.reshape(-1, 1)
-        y = df[y_col].values.reshape(-1, 1)
-        
+        df, X, y = gen_df_from_json(df_json, X_col, y_col)     
         pow_range = [i for i in np.arange(pow_range[0], pow_range[1]+0.1, 0.1)]
         result = single_param_regression(X, y, pow_range, test_size=test_size, metric=metric)
-        
         best_p, best_model, best_error = result.get('best_model', None)
         errors_df = result.get('errors', None)
-        
         best_prediction = best_model.predict(X ** best_p)
         
         single_error_fig = dcc.Graph(
             figure=plt.gen_scatter(errors_df, 'Exponent', 'Error', f'{metric} vs Power', 'Power', metric, h=600
         ))
+        
         single_best_fig = dcc.Graph(
             figure=plt.gen_scatter_comparison(
                 X, y, X, best_prediction, 
@@ -367,6 +380,7 @@ def perform_single_regression(df_json, X_col, y_col, metric, pow_range, test_siz
                 X_col, y_col, label1='Raw', label2='Prediction', h=600
             )
         )
+        
         model_message = f'Best model: y = {round(best_model.intercept_[0], 3)} + {round(best_model.coef_[0][0], 3)}\
              * x ^{round(best_p, 1)}'
         error_message = f'Model performance: {metric} = {round(best_error, 4)}'
@@ -374,6 +388,7 @@ def perform_single_regression(df_json, X_col, y_col, metric, pow_range, test_siz
         return single_error_fig, single_best_fig, html.H2([model_message, html.Br(), html.Br(), error_message])
     else:
         return [], [], ''
+
 
 @app.callback([Output('plot_double_error', 'children'),
                Output('plot_double_best', 'children'),
@@ -385,21 +400,34 @@ def perform_single_regression(df_json, X_col, y_col, metric, pow_range, test_siz
                Input('select_pow_range', 'value'),
                Input('select_test_size', 'value')])
 def perform_double_regression(df_json, X_col, y_col, metric, pow_range, test_size):
+    """ Generate outputs on the double parameter regression panel
+
+    Args:
+        df_json (json): json string stored on the web page
+        X_col (str): name of x-column
+        y_col (str): name of y-column
+        metric (str): type of metric for model evaluation
+        pow_range (list): minimum and maximum of power exponent
+        test_size (float): test_size ratio for model evaluation
+
+    Returns:
+        list: a list contains 
+        1. metric as a function of exponent
+        2. best model prediction
+        3. mathematical expression
+    """    
     if all([df_json, X_col, y_col, metric, pow_range]):
-        df = pd.read_json(str(df_json))
-        X = df[X_col].values.reshape(-1, 1)
-        y = df[y_col].values.reshape(-1, 1)
-        
+        df, X, y = gen_df_from_json(df_json, X_col, y_col)
         pow_range = [i for i in np.arange(pow_range[0], pow_range[1]+0.1, 0.1)]
         result= double_param_regression(X, y, pow_range, test_size=test_size, metric=metric)
-        
         best_p1, best_p2, best_model, best_error = result.get('best_model', None)
         errors_df = result.get('errors', None)
-        
         best_prediction = best_model.predict(pd.DataFrame([X.flatten() ** best_p1, X.flatten() ** best_p2]).T)
         
         hmap = errors_df.pivot_table(index='P2', columns='P1', values='Error')
+        
         double_error_fig = dcc.Graph(figure = plt.gen_heatmap(hmap, 'Error', 'P1', 'P2', h=600))
+        
         double_best_fig = dcc.Graph(
             figure = plt.gen_scatter_comparison(
                 X, y, X, best_prediction, 
@@ -408,6 +436,7 @@ def perform_double_regression(df_json, X_col, y_col, metric, pow_range, test_siz
                 X_col, y_col, label1='Raw', label2='Prediction', h=600
             )
         )
+        
         model_message = f'Best model: y = {round(best_model.intercept_[0], 3)} + {round(best_model.coef_[0][0], 3)}\
              * x ^{round(best_p1, 1)} + {round(best_model.coef_[0][1], 3)} * x ^{round(best_p2, 2)}'
         error_message = f'Model performance: {metric} = {round(best_error, 4)}'
@@ -420,6 +449,14 @@ def perform_double_regression(df_json, X_col, y_col, metric, pow_range, test_siz
 @app.callback(Output('pow_range_indicator', 'children'),
               [Input('select_pow_range', 'value')])
 def update_pow_range_indicator(value):
+    """ Update the range shown on the import panel
+
+    Args:
+        value (list): minimum and maximum of power exponent
+
+    Returns:
+        str: string of selected range
+    """    
     return f'Selected range: {value[0]} - {value[1]}'
     
 
@@ -428,6 +465,17 @@ def update_pow_range_indicator(value):
               [Input('store_data', 'children'),
                Input('select_data_range', 'value')])
 def update_selected_data(df_json, value):
+    """ Select a range of data, store it on the web page and
+    update the data_range indicator.
+
+    Args:
+        df_json (json): jsonified pandas dataframe
+        value (list): minimum and maximum indices of selected range
+
+    Returns:
+        list: list of contents for updating the selected data storage
+        and range indicator
+    """    
     if df_json and value:
         df = pd.read_json(str(df_json))
         df_selected = df.iloc[value[0]-1: value[1]]
@@ -445,6 +493,20 @@ def update_selected_data(df_json, value):
               [Input('upload_data', 'contents')],
               [State('upload_data', 'filename')])
 def input_data(contents, fname):
+    """ Import data and store it on the web page
+    
+    Args:
+        contents (binary): binary content from imported file
+        fname (str): imported file name
+
+    Returns:
+        list: list of contents for updating
+        1. data storage
+        2. name list for x-column
+        3. name list for y-column
+        4. data range for modeling
+        5. uploaded data string indicating that the file is loaded successfully
+    """    
     if contents is not None:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -454,19 +516,29 @@ def input_data(contents, fname):
         return df.to_json(), columns, columns, df.shape[0], message
     else:
         return '', [], [], 1, ''
-    
+   
+ 
 @app.callback(Output('plot_raw', 'children'),
               [Input('store_data', 'children'),
                Input('store_selected_data', 'children'),
                Input('select_X_col', 'value'),
                Input('select_y_col', 'value')])
 def plot_data_selection(df_json, df_selected_json, X_col, y_col):
+    """ update the figure for selected data
+
+    Args:
+        df_json (json): json string of original data
+        df_selected_json (json): json string of selected data
+        X_col (str): name of x-column
+        y_col (str): name of y-column
+
+    Returns:
+        dcc.graph: figure indicating raw and selected data
+    """    
     if all([df_json, X_col, y_col]):
-        df = pd.read_json(df_json)
-        x1, y1 = df[X_col].values, df[y_col].values
+        df, x1, y1 = gen_df_from_json(df_json, X_col, y_col)
         if df_selected_json:
-            df_selected = pd.read_json(df_selected_json)
-            x2, y2 = df_selected[X_col].values, df_selected[y_col].values
+            df_seletec, x2, y2 = gen_df_from_json(df_selected_json, X_col, y_col)
         else:
             x2, y2 = np.array([]), np.array([])
         fig = plt.gen_scatter_comparison(x1, y1, x2, y2, f'{y_col} vs {X_col}', X_col, y_col, 
@@ -475,11 +547,20 @@ def plot_data_selection(df_json, df_selected_json, X_col, y_col):
                                                 'margin': 'auto', 
                                                 'margin-top': '3%'})
     
+
 @app.callback(Output('data_stat', 'children'),
               [Input('store_data', 'children')])
 def update_data_stat(df_json):
+    """ Updating the string for statistics of raw data
+
+    Args:
+        df_json (json): json string of raw data
+
+    Returns:
+        html.Div: html division containing raw data statistics
+    """    
     if df_json:
-        df = pd.read_json(str(df_json))
+        df = gen_df_from_json(df_json)
         data_stat = df.describe().T.reset_index()
         return html.Div([
             html.H3('Raw data statistics: ', 
@@ -495,12 +576,19 @@ def update_data_stat(df_json):
                          style_header = {'backgroundColor': colors['background'],
                                          'fontWeight': 'bold' })
         ])
-    
 
 
 @app.callback(Output('selected_data_stat', 'children'),
               [Input('store_selected_data', 'children')])
 def update_selected_data_stat(df_selected_json):
+    """ Updating the string for statistics of selected data
+
+    Args:
+        df_json (json): json string of selected data
+
+    Returns:
+        html.Div: html division containing selected data statistics
+    """     
     if df_selected_json:
         df_selected = pd.read_json(str(df_selected_json))
         selected_data_stat = df_selected.describe().T.reset_index()
@@ -519,9 +607,11 @@ def update_selected_data_stat(df_selected_json):
                                          'fontWeight': 'bold'})
         ])
 
+
 if __name__ == '__main__':
+    Timer(1, open_browser).start()
     app.run_server(
         host='127.0.0.1',
         port=5000,
-        debug=True
+        debug=False
     )

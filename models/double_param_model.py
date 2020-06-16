@@ -3,6 +3,21 @@ from models.regression import perform_regression
 
 
 def double_param_regression(X, y, pow_range, test_size=0.3, metric='MSE'):
+    """ Performing linear regression of double-parameter model 
+    in a selected expoenent range
+
+    Args:
+        X (DataFrame): input dataframe
+        y (DataFrame): labels
+        pow_range (list): minimum and maximum of exponent 
+        test_size (float, optional): Defaults to 0.3.
+        metric (str, optional): Defaults to 'MSE'.
+
+    Returns:
+        dict: dict containing
+        1. best model parameters
+        2. errors of all exponent combinations
+    """    
     errors = []
     best_error = None
     best_model = None
